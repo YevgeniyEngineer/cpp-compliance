@@ -262,8 +262,19 @@ template <typename DestinationType, typename SourceType>
         auto *const d = reinterpret_cast<std::uint8_t *const>(dest);
         const auto *const s = reinterpret_cast<const std::uint8_t *const>(src);
 
+        // Calculate the required alignment based on the largest alignment
+        static constexpr std::size_t required_alignment =
+            (alignof(DestinationType) > alignof(SourceType)) ? alignof(DestinationType) : alignof(SourceType);
+
         // Check for buffer overlap
         if (((d >= s) && (d <= (s + n_bytes))) || ((s >= d) && (s <= (d + n_bytes))))
+        {
+            std::terminate();
+        }
+
+        // Assert if alignment problems
+        if (((reinterpret_cast<std::uintptr_t>(d) % required_alignment) != 0) ||
+            ((reinterpret_cast<std::uintptr_t>(s) % required_alignment) != 0))
         {
             std::terminate();
         }
@@ -353,7 +364,7 @@ int main()
         start = std::chrono::high_resolution_clock::now();
         nostd::memcpySimpleTemplated(dest_nostd.data(), src.data(), NUM_BYTES);
         end = std::chrono::high_resolution_clock::now();
-        std::cout << "nostd::memcpySimple took: "
+        std::cout << "nostd::memcpySimpleTemplated took: "
                   << std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() << " microseconds."
                   << std::endl;
 
