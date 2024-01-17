@@ -254,36 +254,43 @@ template <typename DestinationType, typename SourceType, std::size_t BlockSize>
 template <typename DestinationType, typename SourceType>
 [[maybe_unused]] static inline void *memcpySimpleTemplated(DestinationType *const __restrict__ dest,
                                                            const SourceType *const __restrict__ src,
-                                                           const std::size_t n_bytes) noexcept
+                                                           const std::size_t n_bytes)
 {
-    // Check for nullpointers
-    if ((nullptr != dest) && (nullptr != src))
+
+    // Calculate the required alignment based on the largest alignment
+    static constexpr std::size_t required_alignment =
+        (alignof(DestinationType) > alignof(SourceType)) ? alignof(DestinationType) : alignof(SourceType);
+
+    // Check for nullptr
+    if (nullptr == src)
     {
-        auto *const d = reinterpret_cast<std::uint8_t *const>(dest);
-        const auto *const s = reinterpret_cast<const std::uint8_t *const>(src);
+        throw std::runtime_error("Memcpy source nullptr");
+    }
+    if (nullptr == dest)
+    {
+        throw std::runtime_error("Memcpy destination nullptr");
+    }
 
-        // Calculate the required alignment based on the largest alignment
-        static constexpr std::size_t required_alignment =
-            (alignof(DestinationType) > alignof(SourceType)) ? alignof(DestinationType) : alignof(SourceType);
+    auto *const d = reinterpret_cast<std::uint8_t *const>(dest);
+    const auto *const s = reinterpret_cast<const std::uint8_t *const>(src);
 
-        // Check for buffer overlap
-        if (((d >= s) && (d <= (s + n_bytes))) || ((s >= d) && (s <= (d + n_bytes))))
-        {
-            std::terminate();
-        }
+    // Assert if alignment problems
+    if (((reinterpret_cast<std::uintptr_t>(d) % required_alignment) != 0) ||
+        ((reinterpret_cast<std::uintptr_t>(s) % required_alignment) != 0))
+    {
+        throw std::runtime_error("Memcpy data type alignment broken");
+    }
 
-        // Assert if alignment problems
-        if (((reinterpret_cast<std::uintptr_t>(d) % required_alignment) != 0) ||
-            ((reinterpret_cast<std::uintptr_t>(s) % required_alignment) != 0))
-        {
-            std::terminate();
-        }
+    // Check for buffer overlap
+    if (((d >= s) && (d <= (s + n_bytes))) || ((s >= d) && (s <= (d + n_bytes))))
+    {
+        throw std::runtime_error("Memcpy pointer overlap");
+    }
 
-        // Copy bytes
-        for (std::size_t i = 0U; i < n_bytes; ++i)
-        {
-            d[i] = s[i];
-        }
+    // Copy bytes
+    for (std::size_t i = 0U; i < n_bytes; ++i)
+    {
+        d[i] = s[i];
     }
 
     return dest;
