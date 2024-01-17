@@ -4,4 +4,5 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 project(cpp_compliance)
 
-add_executable(${PROJECT_NAME} src/main.cpp)
+add_executable(serialization src/serialization.cpp)
+add_executable(memcpy src/memcpy.cpp)
